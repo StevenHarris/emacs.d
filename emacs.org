@@ -1,0 +1,433 @@
+# -*- mode:org; eval:(visual-line-mode t) ; -*-
+# org-mode emacs config file.
+
+# call it from .emacs with (org-babel-load-file (expand-file-name "~/.emacs.d/config.org)
+
+* Tweaks
+** Appearance - part 1
+*** Suppress unwanted elements
+#+begin_src emacs-lisp
+    (tool-bar-mode -1) 
+    (menu-bar-mode -1)
+    (scroll-bar-mode -1)
+#+end_src
+*** Highlight line containing cursor but only in gui mode.
+#+begin_src emacs-lisp
+(when window-system (global-hl-line-mode t))
+#+end_src
+
+#+RESULTS:
+
+*** Current Line and column in mode line
+#+begin_src emacs-lisp
+  (line-number-mode 1)
+  (column-number-mode 1)
+#+end_src
+
+** y-or-n prompt
+Replace yes-or-no prompt with y-or-n prompt
+#+begin_src emacs-lisp
+  (defalias 'yes-or-no-p 'y-or-n-p)
+#+end_src
+
+** Don't sound the bell
+   #+begin_src emacs-lisp
+(setq ring-bell-function 'ignore)
+   #+end_src
+
+   #+RESULTS:
+   : ignore
+
+** Disable startup splash screen
+   #+begin_src emacs-lisp
+     (setq inhibit-startup-message t)
+   #+end_src
+** key bindings to edit/reload config
+#+begin_src emacs-lisp
+  (defun config-visit ()
+    (interactive)
+    (find-file "~/.emacs.d/emacs.org"))
+  (global-set-key (kbd "C-c e") 'config-visit)
+
+  (defun config-reload ()
+    (interactive)
+    (org-babel-load-file (expand-file-name "~/.emacs.d/emacs.org")))
+  (global-set-key (kbd "C-c r") 'config-reload)
+#+end_src
+
+** split window and move to it
+In normal EMACS, every time you split the window you have to *C-x o* to move into it before you can use.  These two functions automate that
+#+begin_src emacs-lisp
+(defun split-and-follow-horizontally ()
+  (interactive)
+  (split-window-below)
+  (balance-windows)
+  (other-window 1))
+(global-set-key (kbd "C-x 2") 'split-and-follow-horizontally)
+
+(defun split-and-follow-vertically ()
+  (interactive)
+  (split-window-right)
+  (balance-windows)
+  (other-window 1))
+(global-set-key (kbd "C-x 3") 'split-and-follow-vertically)
+#+end_src
+** Better kill word
+moves to beginning of word before killing it
+#+begin_src emacs-lisp
+(defun kill-whole-word ()
+  (interactive)
+  (backward-word)
+  (kill-word 1))
+(global-set-key (kbd "C-c w w") 'kill-whole-word)
+#+end_src
+
+** Clock
+Display clock in mode line
+#+begin_src emacs-lisp
+(setq display-time-24hr-format t)
+(display-time-mode 1)
+#+end_src
+* Helpers
+** Diminish minor modes
+#+begin_src emacs-lisp
+(use-package diminish
+ :ensure t)
+(diminish 'eldoc-mode)
+#+end_src
+
+#+RESULTS:
+|   |
+
+** Rainbow delimiters
+#+begin_src emacs-lisp
+  (use-package rainbow-delimiters
+    :ensure t
+    :init
+    (progn
+      (add-hook 'prog-mode-hook 'rainbow-delimiters-mode 1)))
+#+end_src
+
+#+RESULTS:
+
+** Sudo-edit
+Allows easy editing of local files as root
+#+begin_src emacs-lisp
+  (use-package sudo-edit
+    :ensure t
+    :bind ("s-e" . sudo-edit))
+#+end_src
+** which-key
++ gives key completion hints in minibuffer
++ installed from melpa
+#+begin_src emacs-lisp
+  (use-package which-key
+    :ensure t
+    :diminish which-key-mode
+    :init
+    (which-key-mode))
+#+end_src
+
+#+RESULTS:
+** ansi-term
++ complete terminal emulation
++ asks for which shell to run every time
++ force selction with this code
+#+begin_src emacs-lisp
+  (defvar my-term-shell "/bin/bash")
+  (defadvice ansi-term (before force-bash)
+    (interactive (list my-term-shell)))
+  (ad-activate 'ansi-term)
+#+end_src
+#+RESULTS:
+: ansi-term
++ Key binding to open terminal with super-return
+#+begin_src emacs-lisp
+  (global-set-key (kbd "s-<return>") 'ansi-term)
+#+end_src
+
+** Hungry delete
+Deletes mulptiple whitespace
+#+begin_src emacs-lisp
+(use-package hungry-delete
+ :ensure t
+ :diminish hungry-delete-mode
+ :config(global-hungry-delete-mode))
+#+end_src
+
+#+RESULTS:
+
+** electric-pair mode
+#+begin_src emacs-lisp
+  (setq electric-pair-pairs '(
+			      (?\( .?\))
+			      (?\[ .?\])
+			      (?\{ .?\})
+			      ))
+  (electric-pair-mode t)
+#+end_src
+** ido-mode
+look ahead completion. turn it on everywhere
+#+begin_src emacs-lisp
+  (setq ido-enable-flex-matching nil)
+  (setq ido-create-new-buffer 'always)
+  (setq ido-everywhere t)
+  (ido-mode 1)
+#+end_src
+*** ido-vertical-mode  
+shows ido completions in vertical format
+
+the =ido-vertical-keys= variable allows C-n C-p to be used for down and up navigation.  Tab/backtab can still be used.
+
+    # #+begin_comment emacs-lisp
+    #   (use-package ido-vertical-mode
+    # 	:ensure t
+    # 	:init
+    # 	(ido-vertical-mode 1))
+    #   (setq ido-vertical-define-keys 'C-n-and-C-p-only)
+
+    # #+end_comment
+
+*** Smex
+Built on top of ido smex provides a convenient interface to your most frequently used commands
+#+begin_src emacs-lisp
+  (use-package smex
+	:ensure t
+	:init (smex-initialize)
+	:bind 
+	   (("M-x" . smex )  ;; use smex every time we M-x
+	    ("M-X" . smex-major-mode-commands) ;; lists only commands relevant to the major mode we are using
+	    ("C-c C-c M-x" . execute-extended-command)));; this last one is supposed to supply the standard M-x command but thtas not working
+#+end_src
+** Ibuffer
+Better buffer selection mode.  THis one is built in
+Change *C-x b* to use =ibuffer=
+Change *C-x C-b* to use =ido-switch-buffer=
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-x C-b") 'ido-switch-buffer)
+  (global-set-key (kbd "C-x b") 'ibuffer)
+
+#+end_src
+
+#+RESULTS:
+: ibuffer
+ 
+** avy
+Navigate in buffer using character search
+#+begin_src emacs-lisp
+  (use-package avy
+    :ensure t
+    :bind ("M-s". avy-goto-char))
+#+end_src
+** Copy whole line
+Copy all of line containing Point, without moving point
+#+begin_src emacs-lisp
+  (defun copy-whole-line ()
+    (interactive)
+    (save-excursion
+      ;; saves point and restores it at end of body
+      (kill-new
+       (buffer-substring
+	(point-at-bol)
+	(point-at-eol)))))
+  (global-set-key (kbd "C-c w l") 'copy-whole-line)
+
+#+end_src
+** Kill all buffers
+Does what it says in the heading.
+Dave has this one set to a difficult key binding. I prefer to just define the function and run it with "M-x kill-all-buffers" when I want it.
+#+begin_src emacs-lisp
+  (defun kill-all-buffers ()
+    (interactive)
+    (mapc 'kill-buffer (buffer-list)))
+  ;;(global-set-key (kbd "C-M-s-k" 'kill-all-buffers))
+#+end_src 
+* Spacemacs Theme
+#+begin_src emacs-lisp
+(use-package spacemacs-theme
+    :defer t 
+    :init (load-theme 'spacemacs-dark t)) 
+#+end_src
+
+ #+RESULTS:
+ : t
+** Spaceline
+#+begin_src emacs-lisp
+  (use-package spaceline
+    :ensure t
+    :config
+     (require 'spaceline-config)
+     (setq spaceline-buffer-encoding-abbrev-p nil)
+     (setq spaceline-line-column-p 1)
+     (setq spaceline-line-p nil)
+     (setq powerline-default-separator (quote arrow))
+     (spaceline-spacemacs-theme))
+#+end_src
+
+#+RESULTS:
+: t
+
+* Dashboard
+*** Show recent files on startup screen
+#+BEGIN_SRC emacs-lisp
+  (use-package dashboard
+    :ensure t
+    :config
+    (dashboard-setup-startup-hook)
+    (setq dashboard-items '((recents  . 10)
+			  (bookmarks . 5)
+			  (agenda . 5)
+			  (registers . 5)))
+    (setq dashboard-banner-logo-title "Steven's Tailored Emacs Config"))
+#+END_SRC
+
+* Org-mode 
+** Global keys
+#+BEGIN_SRC emacs-lisp
+      (global-set-key "\C-cl" 'org-store-link)
+      (global-set-key "\C-ca" 'org-agenda)
+      (global-set-key "\C-cc" 'org-capture)
+      (global-set-key "\C-cb" 'org-switchb)
+#+END_SRC
+
+** Open org source blocks in same window
+   #+begin_src emacs-lisp
+     (setq org-src-window-setup 'current-window) 
+   #+end_src
+** emacs lisp org snippet
+Add this in the org configuration of the template.  After execution, "C-c C-, el" will give an emacs-lisp source block.
+the question mark indicates position of point  after execution.
+*** Current syntax
+Commented out causes error on startup.  May need to reimplement as an org-mode hook
+ 
+#+begin_comment emacs-lisp
+  (add-to-list 'org-structure-template-alist
+	     '("el" . "src emacs-lisp"))
+#+end_comment
+
+#+RESULTS:
+: ((el . src emacs-lisp) (a . export ascii) (c . center) (C . comment) (e . example) (E . export) (h . export html) (l . export latex) (q . quote) (s . src) (v . verse))
+
+
+
+
+** org-tempo
+Org-tempo watches for < in line 1 and allow quick insertion of templates
+e.g ~< s TAB~ to insert a begin_src block
+Now disabled in favour of "C-c C-,""
+# #+begin_src emacs-lisp
+# (require 'org-tempo)
+# #+end_src
+** org-roam
+#+begin_src emacs-lisp 
+  (use-package org-roam
+    :hook 
+    (after-init . org-roam-mode)
+    :straight (:host github :repo "jethrokuan/org-roam")
+    :diminish org-roam-mode
+    :custom
+    (org-roam-directory "~/org-roam/")
+    :bind (:map org-roam-mode-map
+		(("C-c m l" . org-roam)
+		 ("C-c m f" . org-roam-find-file)
+		 ("C-c m g" . org-roam-show-graph))
+		:map org-mode-map
+		(("C-c m i" . org-roam-insert))))
+  (setq org-capture-templates
+	'(("d" "default" plain (function org-roam--capture-get-point)
+	  "%?"
+	  :file-name "%<%Y%m%d%H%M%S>-${slug}"
+	  :head "#+TITLE: ${title}\n"
+	  :unnarrowed t)))
+#+end_src
+
+#+RESULTS:
+| d           | default | plain | (function org-roam--capture-get-point) | %? | :file-name | %<%Y%m%d%H%M%S>-${slug} | :head | #+TITLE: ${title} |
+| :unnarrowed | t       |       |                                        |    |            |                         |       |                   |
+
+** org-journal
+   #+begin_src emacs-lisp
+     (use-package org-journal
+       :bind
+       ("C-c m j" . org-journal-new-entry)
+       :custom
+       (org-journal-date-prefix "#+TITLE: ")
+       (org-journal-file-format "%Y-%m-%d.org")
+       (org-journal-dir "~/org-roam/")
+       (org-journal-date-format "%y-%m-%d %a"))
+   #+end_src
+** org-journal helpers
+*** deft
+Deft provides a nice interface for browsing and filtering org-roam notes.
+
+If the title of the Org file is not the first line, you might not get nice titles. You may choose to patch this to use org-roam's functionality. Here I'm using el-patch:
+
+#+begin_src emacs-lisp
+  (use-package el-patch
+    :straight (:host github
+		     :repo "raxod502/el-patch"
+		     :branch "develop"))
+  (eval-when-compile
+    (require 'el-patch))
+  (use-package deft
+    :after org
+    :bind
+    ("C-c m d" . deft)
+    :custom
+    (deft-recursive t)
+    (deft-use-filter-string-for-filename t)
+    (deft-default-extension "org")
+    (deft-directory "~/org-roam/")
+    ;; same as above...
+    :config/el-patch
+    (defun deft-parse-title (file contents)
+      "Parse the given FILE and CONTENTS and determine the title.
+  If `deft-use-filename-as-title' is nil, the title is taken to
+  be the first non-empty line of the FILE.  Else the base name of the FILE is
+  used as title."
+      (el-patch-swap (if deft-use-filename-as-title
+			 (deft-base-filename file)
+		       (let ((begin (string-match "^.+$" contents)))
+			 (if begin
+			     (funcall deft-parse-title-function
+				      (substring contents begin (match-end 0))))))
+		     (org-roam--get-title-or-slug file))))
+#+end_src
+
+#+RESULTS:
+: deft-parse-title
+
+The Deft interface can slow down quickly when the number of files get huge. =Notdeft= is a fork of Deft that uses an external search engine and indexer.
+
+* Dired  
+** use lisp ls
+#+begin_src emacs-lisp
+(require 'ls-lisp)
+(setq ls-lisp-dirs-first t)
+(setq ls-lisp-use-insert-directory-program nil)
+#+end_src
+* Yasnippet
+#+begin_src emacs-lisp
+  (use-package yasnippet)
+    :ensure t
+    :config (use-package yasnippet-snippets
+	      :ensure t)
+  (yas-reload-all)
+#+end_src
+
+#+RESULTS:
+: [yas] Prepared just-in-time loading of snippets successfully.
+
+* Yaml mode
+#+begin_src emacs-lisp
+(straight-use-package 'yaml-mode)
+(add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
+#+end_src
+
+
+* APL
+#+begin_src emacs-lisp
+  (use-package gnu-apl-mode)
+#+end_src
+
+#+RESULTS:

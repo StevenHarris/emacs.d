@@ -1,0 +1,2 @@
+#s(hash-table size 65 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("/home/steve/org-roam/2021-01-03T1217.org" (0 0 0)))
+#s(hash-table size 65 test equal rehash-size 1.5 rehash-threshold 0.8125 data ("/home/steve/org-roam/2021-01-03T1217.org" (24561 10356 940000 0)))
